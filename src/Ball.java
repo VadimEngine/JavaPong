@@ -2,90 +2,137 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Rectangle;
 
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.LineUnavailableException;
-import javax.sound.sampled.SourceDataLine;
-
-
+/**
+ * Ball object that bounces off the top and bottom border and the Player/AI paddles. If it reaches the left of right
+ * border then it respawns in the middle of the game. Plays a sound on bouncing if handler sound is enabled
+ * @author user
+ *
+ */
 public class Ball {
-	int x, y;
-	int size = 16;
-	int speed = 2;
-	int vx, vy, vxi;
 	
-	Rectangle boundingBox;
+	private static enum DIRECTION{LEFT, RIGHT};
 	
-	public Ball(int x, int y){
-		this.x = x;
-		this.y = y;
-		
+	private int x;
+	private int y;
+	private int radius = 16;
+	private int speed = 6;
+	/**
+	 * X velocity
+	 */
+	private int vx;
+	/**
+	 * Y velocity
+	 */
+	private int vy;
+	
+	private Rectangle rect;
+	private Handler handler;
+	
+	/**
+	 * Constructor that sets the position of the ball to the center of the game
+	 * @param x The x position
+	 * @param y The y position
+	 * @param handler the game handler
+	 */
+	public Ball(Handler handler){
+		this.x = handler.getWidth()/2;
+		this.y = handler.getWidth()/2;
+		this.handler = handler;
 		vx = speed;
 		vy = speed;
-		
-		boundingBox = new Rectangle (x, y, size, size);
-		boundingBox.setBounds(x, y, size, size);
+		rect = new Rectangle(x, y, radius, radius);
 	}
-
-	public void tick(Game game) throws LineUnavailableException {
-		boundingBox.setBounds(x, y, size, size);
+	
+	/**
+	 * Ball moves with vx and vy velocities. Bounces off the top and bottom borders and player/ai paddles. Sets the
+	 * Rectangle position for collision detection
+	 */
+	public void tick() {
+		rect.x = x;
+		rect.y = y;
+		PlayerPaddle p = handler.getPlayer();
+		AIPaddle ai = handler.getAi();
 		
-		if (x <=0){
-			game.p2score ++;
-			Game.ball = new Ball(game.getWidth() / 2, game.getHeight() / 2);
-		} else if (x + size >= game.getWidth() - size) {
-			game.p1score ++;
-			Game.ball = new Ball(game.getWidth() / 2, game.getHeight() / 2);
+		if (x < 0){
+			handler.addP2Score();
+			x = handler.getWidth()/2;
+			y = handler.getHeight()/2;
+			bounceX(DIRECTION.RIGHT);
+		} else if (x + radius*2  > handler.getWidth()) {
+			handler.addP1Score();
+			x = handler.getWidth()/2;
+			y = handler.getHeight()/2;
+			bounceX(DIRECTION.LEFT);
 		}
 		
+		//top and bottom bounce
 		if (y <= 0) {
 			vy = speed;
-		} else if (y + size >= game.getHeight()) {
+		} else if (y + radius >= handler.getHeight()) {
 			vy = - speed;
 		}
+					
+		if (collideRect(p.getRectangle())) {
+			bounceX(DIRECTION.RIGHT);
+		}
 		
+		if (collideRect(ai.getRectangle())) {
+			bounceX(DIRECTION.LEFT);
+		}
+
+		//move with its velocities	
 		x += vx;
 		y += vy;
-		
-		if(vxi!= vx) {
-			
-			byte[] buf = new byte[1];
-			AudioFormat af = new AudioFormat( (float )44100, 8, 1, true, false );
-			SourceDataLine sdl = AudioSystem.getSourceDataLine( af );
-			sdl.open();
-			sdl.start();
-
-			for( int i = 0; i < 100 * (float )44100 / 1000; i++ ) {
-				double angle = i / ( (float )44100 / 440 ) * 2.0 * Math.PI;
-				buf[ 0 ] = (byte )( Math.sin( angle ) * 100 );
-				sdl.write( buf, 0, 1 );
-			}
-			
-			vxi=vx;
-		}
-		
-		paddleCollide(game);
 	}
 	
-	private void paddleCollide(Game game) {
-		if (boundingBox.intersects(Game.player.boundingBox)) {
-			vx = speed;	
-		} else if (boundingBox.intersects(Game.ai.boundingBox)) {
-			vx = -speed;
-		}
-	}
-	
+	/**
+	 * Renders a white circle at x, y position
+	 * @param g Graphics object that renders the game
+	 */
 	public void render(Graphics g) {
 		g.setColor(Color.WHITE);
-		g.fillOval(x,  y,  size, size);
+		g.fillOval(x,  y,  radius, radius);	
+	}
 		
+	/**
+	 * Switch the x direction and plays sound if handler sound is enabled.
+	 */
+	private void bounceX(DIRECTION dir) {
+		if (dir == DIRECTION.LEFT) {
+			vx = -speed;
+		} else if (dir == DIRECTION.RIGHT) {
+			vx = speed;
+		}
+		
+		if (handler.soundEnabled()) {			
+			SoundPlayer.playBeep();
+		}
+	}
+		
+	/**
+	 * Uses Rectangle object for collision detection
+	 * @param other
+	 * @return
+	 */
+	private boolean collideRect(Rectangle other) {
+		return rect.intersects(other);
 	}
 	
-	public void setVx(int speed) throws LineUnavailableException {
+	//Getters=----------------------------------------------------------------------------------------------------------
 	
+	public int getX() {
+		return x;
 	}
-
+	
+	public int getY() {
+		return y;
+	}
+	
+	/**
+	 * Gets the rectangle that is used for collision detection
+	 * @return
+	 */
+	public Rectangle getRectangle() {
+		return rect;
+	}
 }
-
-
-
