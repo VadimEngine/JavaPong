@@ -3,10 +3,8 @@
 One of my first game. A remake of the popular game Pong. It includes a player paddle that is controlled by the user with the "W" and "S" keys. A ball that bounces of the top and bottom walls as well as the Player/AI paddle. And an AI paddle that follows the ball when the ball is in its half of the game. When the ball reaches the left or side of the screen, the opposite player receives a point. Once a player reaches 1o points, the winner is announced and the user can restart the game with the "Space" key. Sound plays when the ball bounces and can be enabled/disabled with the "1" key.
 
 ![Start Game](./Screenshot/Playimg.png)
-When the Game starts
 
 ![Game Over](./Screenshot/GameOverimg.png)
-When the Game finishes.
 
 The application uses Java AWT (Abstract Window Toolkit) and swing manage the game rendering and controlling. Everything is rendered in a canvas using a BufferStrategy and Graphics object.
 
